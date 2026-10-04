@@ -2,50 +2,75 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
+@custom-variant dark (&:is(.dark *));
+
 @theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
   --color-canvas: var(--canvas);
   --color-surface: var(--surface);
   --color-ink: var(--ink);
-  --color-muted: var(--muted);
-  --color-border: var(--border);
   --color-terracotta: var(--terracotta);
   --color-sage: var(--sage);
   --color-ochre: var(--ochre);
+  --color-sage-foreground: var(--sage-foreground);
+  --color-ochre-foreground: var(--ochre-foreground);
   --color-critical: var(--critical);
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --color-card: var(--card);
-  --color-card-foreground: var(--card-foreground);
-  --color-popover: var(--popover);
-  --color-popover-foreground: var(--popover-foreground);
-  --color-primary: var(--primary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-secondary: var(--secondary);
-  --color-secondary-foreground: var(--secondary-foreground);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-accent: var(--accent);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-destructive: var(--destructive);
-  --color-input: var(--input);
+  --font-sans: var(--font-work-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: ui-monospace, "Cascadia Code", monospace;
+  --font-heading: var(--font-work-sans), ui-sans-serif, system-ui, sans-serif;
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
   --color-ring: var(--ring);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
 }
 
 :root {
-  --canvas: #F9F7F2;
-  --surface: #FFFFFF;
-  --ink: #30312E;
-  --muted: #777773;
-  --border: #E4E2DD;
-  --terracotta: #8C6A5D;
-  --sage: #A3B18A;
-  --ochre: #D4A373;
-  --critical: #9B3A32;
+  /* Paleta do ateliê (CLAUDE.md / docs/DESIGN.md). Única fonte de hex da interface. */
+  --canvas: #f9f7f2;
+  --surface: #ffffff;
+  --ink: #30312e;
+  --terracotta: #8c6a5d;
+  --sage: #a3b18a;
+  --ochre: #d4a373;
+  --sage-foreground: #5c6b47;
+  --ochre-foreground: #8a5a1f;
+  --critical: #9b3a32;
+
+  /* Tokens semânticos do shadcn apontando para a paleta. `muted` e `border` da paleta
+     são --muted-foreground (texto secundário) e --border (divisórias e campos). */
   --background: var(--canvas);
   --foreground: var(--ink);
   --card: var(--surface);
@@ -56,21 +81,72 @@
   --primary-foreground: var(--surface);
   --secondary: var(--canvas);
   --secondary-foreground: var(--ink);
-  --muted-foreground: var(--muted);
-  --accent: var(--ochre);
+  --muted: var(--canvas);
+  --muted-foreground: #777773;
+  --accent: var(--canvas);
   --accent-foreground: var(--ink);
   --destructive: var(--critical);
+  --border: #e4e2dd;
   --input: var(--border);
   --ring: var(--terracotta);
+  --chart-1: oklch(0.87 0 0);
+  --chart-2: oklch(0.556 0 0);
+  --chart-3: oklch(0.439 0 0);
+  --chart-4: oklch(0.371 0 0);
+  --chart-5: oklch(0.269 0 0);
   --radius: 0.625rem;
+  --sidebar: var(--canvas);
+  --sidebar-foreground: var(--ink);
+  --sidebar-primary: var(--terracotta);
+  --sidebar-primary-foreground: var(--surface);
+  --sidebar-accent: var(--surface);
+  --sidebar-accent-foreground: var(--ink);
+  --sidebar-border: var(--border);
+  --sidebar-ring: var(--terracotta);
+}
+
+.dark {
+  --background: oklch(0.145 0 0);
+  --foreground: oklch(0.985 0 0);
+  --card: oklch(0.205 0 0);
+  --card-foreground: oklch(0.985 0 0);
+  --popover: oklch(0.205 0 0);
+  --popover-foreground: oklch(0.985 0 0);
+  --primary: oklch(0.922 0 0);
+  --primary-foreground: oklch(0.205 0 0);
+  --secondary: oklch(0.269 0 0);
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.269 0 0);
+  --muted-foreground: oklch(0.708 0 0);
+  --accent: oklch(0.269 0 0);
+  --accent-foreground: oklch(0.985 0 0);
+  --destructive: oklch(0.704 0.191 22.216);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.556 0 0);
+  --chart-1: oklch(0.87 0 0);
+  --chart-2: oklch(0.556 0 0);
+  --chart-3: oklch(0.439 0 0);
+  --chart-4: oklch(0.371 0 0);
+  --chart-5: oklch(0.269 0 0);
+  --sidebar: oklch(0.205 0 0);
+  --sidebar-foreground: oklch(0.985 0 0);
+  --sidebar-primary: oklch(0.488 0.243 264.376);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.269 0 0);
+  --sidebar-accent-foreground: oklch(0.985 0 0);
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: oklch(0.556 0 0);
 }
 
 @layer base {
   * {
     @apply border-border outline-ring/50;
   }
-
   body {
     @apply bg-background text-foreground;
+  }
+  html {
+    @apply font-sans;
   }
 }

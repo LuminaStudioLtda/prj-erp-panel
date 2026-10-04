@@ -1,20 +1,20 @@
-## Context
+## Contexto
 
-- Issue or task:
-- Objective:
+- Issue/Trello:
+- Objetivo:
 
-## Changes
+## Mudanças
 
 -
 
-## Evidence
+## Evidências
 
-- [ ] Screenshots or preview link, when applicable
-- [ ] Acceptance criteria verified
+- [ ] Capturas de tela ou link do preview
+- [ ] Critérios de aceite conferidos
 
-## Quality
+## Qualidade
 
 - [ ] `pnpm lint`
 - [ ] `pnpm typecheck`
 - [ ] `pnpm build`
-- [ ] Empty, error, and responsive states verified when applicable
+- [ ] Cenários de erro, vazio e responsividade verificados quando aplicável
