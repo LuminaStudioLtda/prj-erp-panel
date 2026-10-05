@@ -65,8 +65,8 @@ function ResumoDoRegistro({ insumo, onCadastrarOutro, onFechar }: ResumoDoRegist
             Insumo adicionado
           </h2>
           <p className="text-sm text-muted-foreground">
-            Já aparece na tabela abaixo. Como o banco de dados ainda não existe, isto é um
-            dado de demonstração e não sobrevive a um recarregar da página.
+            Salvo no estoque, com o primeiro lote e a movimentação de entrada. Já aparece na
+            tabela abaixo.
           </p>
         </div>
       </header>
