@@ -34,22 +34,22 @@ function semAcento(texto: string): string {
   return texto.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 }
 
-/** Filtra por status e por texto livre no código, no cliente e nos nomes dos produtos. */
+/** Filtra por status e por texto livre no código, no cliente e nos nomes dos produtos; cada palavra digitada precisa aparecer. */
 export function filtrarPedidos(
   pedidos: PedidoDaLista[],
   busca: string,
   status: StatusDoPedido | "todos",
 ): PedidoDaLista[] {
-  const termo = semAcento(busca.trim().replace(/^#/, ""));
+  const termos = semAcento(busca.trim().replace(/^#/, "")).split(/\s+/).filter(Boolean);
 
   return pedidos.filter((pedido) => {
     if (status !== "todos" && pedido.status !== status) return false;
-    if (termo === "") return true;
+    if (termos.length === 0) return true;
 
     const alvo = semAcento(
       [pedido.codigo.replace(/^#/, ""), pedido.cliente, ...pedido.itens.map((item) => item.nome)].join(" "),
     );
-    return alvo.includes(termo);
+    return termos.every((termo) => alvo.includes(termo));
   });
 }
 

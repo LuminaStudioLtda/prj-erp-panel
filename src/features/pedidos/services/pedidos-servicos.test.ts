@@ -146,6 +146,8 @@ describe("indicadores e filtros de pedidos", () => {
     expect(filtrarPedidos([pedido({ cliente: "João Álvares" })], "joao alvares", "todos")).toHaveLength(1);
     expect(filtrarPedidos(lista, "cardigan", "COMPLETED").map((p) => p.id)).toEqual(["3"]);
     expect(filtrarPedidos(lista, "inexistente", "todos")).toEqual([]);
+    // cada palavra casa separadamente, em qualquer ordem
+    expect(filtrarPedidos([pedido({ itens: [{ produtoId: "p1", nome: "Manta Algodão Ocre", quantidade: 1, precoUnitario: 1 }] })], "ocre manta", "todos")).toHaveLength(1);
   });
 
   it("conta pedidos por status", () => {
