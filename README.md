@@ -1,53 +1,50 @@
 # Lumina ERP
 
-A Next.js foundation for Lumina's operational management platform. Business modules are added incrementally and remain isolated by domain.
+Painel ERP da Lumina, com módulos de ateliê, construído com Next.js, TypeScript, Tailwind CSS, shadcn/ui e Phosphor Icons.
 
-## Technology
+## Começar a desenvolver
 
-Next.js App Router, React, TypeScript, Tailwind CSS, shadcn/ui, Zustand, MySQL, and Docker. Use **pnpm only**; npm and Yarn are not supported.
-
-## Getting started
+O app Next, a governança, os hooks e o CI vivem na raiz do repositório.
 
 ```bash
+copy .env.example .env
 pnpm install
+pnpm db:up
+pnpm db:migrate:dev
+pnpm db:seed
 pnpm dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000).
+Abra `http://localhost:3000`.
 
-## Quality checks
+Copie `.env.example` para `.env`; a senha do PostgreSQL ali é só para desenvolvimento local. Suba o banco com `pnpm db:up` e aplique o schema inicial com `pnpm db:migrate:dev`. Defina `SESSION_SECRET` com um valor aleatório de pelo menos 32 bytes e gere o client do Prisma com `pnpm db:generate`.
 
-Run these commands before opening a pull request:
+## Comandos de qualidade
 
 ```bash
 pnpm lint
 pnpm typecheck
 pnpm build
+pnpm test
+pnpm test:integration
 ```
 
-Husky runs lint-staged before every commit. For staged application source files, it runs lint and type checking. GitHub Actions repeats lint, type checking, and the production build in a clean environment.
+Os três comandos precisam passar antes de abrir um PR. O pré-commit usa Husky + lint-staged para impedir commits com erro de lint, de tipos ou `any` explícito em código de aplicação. O GitHub Actions repete lint, tipos e build em ambiente limpo.
 
-## Branching and delivery
+## Fluxo de entrega
 
-```text
-feat/* | fix/* | chore/*  →  hml  →  main
+```
+feat/* ou fix/*  →  homolog (QA)  →  main (produção)
 ```
 
-- `main` is the protected production branch. Changes reach it only through a pull request from `hml`.
-- `hml` is the protected staging and QA branch. Create working branches from it and open pull requests back to it.
-- Use `feat/`, `fix/`, `chore/`, or `hotfix/` prefixes. Keep branches and pull requests focused on one deliverable.
-- Require a green CI run and resolved review comments before merging. Prefer squash merges.
-- Use Conventional Commits in English. Examples: `feat: add inventory dashboard`, `fix: prevent duplicate transaction`, and `chore: update project tooling`.
+- `main` é intocável por push direto, representa produção e só recebe PR de `homolog`.
+- `homolog` é o ambiente de integração e QA.
+- Cada pessoa cria `feat/*`, `fix/*` ou `chore/*` a partir de `homolog` e abre PR de volta para `homolog`.
+- Pedro é o responsável por revisar e fazer merge em `main`.
+- Use PRs pequenos, vinculados a uma issue/cartão Trello, e commits no padrão Conventional Commits.
 
-## Code conventions
+As regras completas de operação, proteção no GitHub e deploy estão em [docs/OPERACAO_E_GOVERNANCA.md](docs/OPERACAO_E_GOVERNANCA.md). O procedimento diário está em [CONTRIBUTING.md](CONTRIBUTING.md). O modelo visual, as regras de negócio extraídas do Stitch e o backlog de MVP estão em [docs/DESIGN.md](docs/DESIGN.md), [docs/REGRAS_DE_NEGOCIO.md](docs/REGRAS_DE_NEGOCIO.md) e [docs/TRELLO_BACKLOG_MVP.md](docs/TRELLO_BACKLOG_MVP.md).
 
-- Follow [ARCHITECTURE.md](ARCHITECTURE.md) before changing structure or conventions.
-- Use the semantic palette defined in [docs/DESIGN.md](docs/DESIGN.md); do not introduce arbitrary interface colors.
-- Keep domain-specific code inside `src/features/<feature-name>/`; promote code only when it is reused by two or more features.
-- Shared UI belongs in `src/components`, reusable hooks in `src/hooks`, infrastructure helpers in `src/lib`, and cross-feature Zustand stores in `src/store`.
-- Keep types colocated with their usage and import concrete files directly. Barrel files are not allowed.
-- Keep business rules out of pages, layouts, and visual UI components. Database access belongs in the responsible feature service.
+## UI e Stitch
 
-## Documentation
-
-[ARCHITECTURE.md](ARCHITECTURE.md) is the technical reference. See [CONTRIBUTING.md](CONTRIBUTING.md) for the contribution workflow and [docs/OPERACAO_E_GOVERNANCA.md](docs/OPERACAO_E_GOVERNANCA.md) for branch protection and deployment guidance.
+shadcn/ui é a fonte dos primitives acessíveis e versionados no próprio projeto; Phosphor Icons é o padrão de ícones. O modelo Stitch já foi decomposto em tokens, layout, componentes reutilizáveis, estados, regras e backlog nos documentos acima. Não usamos o Stitch como código pronto sem essa revisão.

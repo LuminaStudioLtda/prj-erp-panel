@@ -2,9 +2,11 @@
 
 ## Visão geral
 
-Este repositório contém a base do painel ERP da Lumina. Os módulos de negócio serão adicionados de forma incremental, por domínio. Nenhuma regra do e-commerce foi migrada para este projeto.
+Esta é um painel ERP Next.js, sem loja pública:
 
-O Next.js App Router entrega rotas. Regras de negócio pertencem à feature que as utiliza, nunca à página, layout ou componente visual.
+- **Painel administrativo:** gestão de insumos, ficha técnica, precificação, estoque, produção e pedidos.
+
+O App Router entrega as rotas. A regra de negócio pertence ao domínio que a utiliza, nunca à página ou ao componente visual.
 
 ## Estrutura de pastas
 
@@ -14,45 +16,45 @@ src/
   features/     # Domínios de negócio e seus casos de uso.
   components/   # UI reutilizada por duas ou mais features; shadcn em components/ui.
   hooks/        # Hooks reutilizados por duas ou mais features.
-  lib/          # Clientes de API/MySQL e helpers gerais sem domínio específico.
+  lib/          # Clientes de infraestrutura PostgreSQL/Prisma e helpers gerais.
   store/        # Stores Zustand compartilhadas, uma por domínio.
 ```
 
 ### Onde cada coisa vai
 
 - Uma feature fica em `src/features/<nome-em-kebab-case>/` e pode ter `components/`, `hooks/`, `services/` e `types.ts` próprios.
-- Código usado apenas por uma feature permanece nela. Código usado por duas ou mais sobe para `components/`, `hooks/`, `lib/` ou `store/`.
-- `components/` contém UI sem regra de domínio. Primitives do shadcn/ui ficam em `components/ui/`.
-- `lib/` concentra clientes de infraestrutura e helpers gerais. Acesso ao MySQL ocorre somente em `services/` da feature responsável, usando o cliente definido em `lib/`.
-- `store/` contém estado global ou compartilhado entre features. Nomeie cada arquivo como `use-<dominio>-store.ts`. Estado local de uma feature permanece nela.
+- Código utilizado apenas por uma feature permanece dentro dela. Código utilizado por duas ou mais sobe para `components/`, `hooks/`, `lib/` ou `store/`.
+- `components/` contém primitives e composições de UI sem regra de domínio. Os componentes shadcn/ui ficam obrigatoriamente em `components/ui/`.
+- `lib/` concentra o cliente PostgreSQL/Prisma e helpers gerais. Features acessam dados persistidos somente por seus próprios services; esses services usam `lib/db.ts` e `lib/with-database-role.ts`.
+- `store/` contém apenas estado global ou compartilhado entre features. Nomeie cada arquivo como `use-<dominio>-store.ts`. Estado local de uma única feature deve permanecer nela.
 - Não crie `shared/`, `entities/`, `widgets/` ou uma pasta genérica de tipos.
 
 ## Convenções
 
-- Features e diretórios: `kebab-case` (`contas-a-pagar`, `controle-estoque`).
+- Features e diretórios: `kebab-case` (`ficha-tecnica`, `controle-estoque`).
 - Componentes React: `PascalCase.tsx`.
 - Hooks: `use-nome-do-hook.ts`.
 - Serviços: `nome-do-servico.ts`.
 - Tipos: no arquivo onde são usados ou em `features/<feature>/types.ts`; não crie `src/types`.
-- Importe o arquivo real diretamente. Barrel files `index.ts` e `index.tsx` que apenas reexportam arquivos são proibidos.
+- Importe diretamente o arquivo real. Barrel files `index.ts` e `index.tsx` que apenas reexportam arquivos da pasta são proibidos.
 - Use os aliases `@/features/*`, `@/components/*`, `@/hooks/*`, `@/lib/*` e `@/store/*`.
 - TypeScript é estrito; `any` explícito é proibido.
 
-## Estado, design e dados
+## State management
 
-Zustand é a solução de estado global. Crie uma store somente para estado que atravesse componentes ou features. Não duplique dados persistidos: o serviço da feature é a fonte de dados do servidor.
+Zustand é a solução de estado global. Crie store apenas para estado que atravessa componentes ou features, como sessão ou filtros compartilhados. Evite duplicar dados de servidor no store: o serviço responsável pela feature é a fonte para dados persistidos.
 
-Para UI, siga [docs/DESIGN.md](docs/DESIGN.md). Cores são consumidas pelos tokens semânticos de `src/app/globals.css`; não use hex ou cor utilitária arbitrária nos componentes.
-
-## Stack e comandos
+## Stack
 
 - Next.js App Router e React
 - TypeScript estrito
 - Tailwind CSS e shadcn/ui
 - Zustand
-- MySQL e Docker para persistência e ambiente local quando o backend for introduzido
+- PostgreSQL, Prisma ORM e Docker para persistência
 
-Use exclusivamente pnpm:
+## Comandos
+
+Use exclusivamente pnpm.
 
 ```bash
 pnpm install
@@ -60,22 +62,30 @@ pnpm dev
 pnpm lint
 pnpm typecheck
 pnpm build
+pnpm test              # unitários, sem banco
+pnpm test:integration  # usa o Postgres do .env (pnpm db:up)
+pnpm db:seed           # insumos, lotes, produtos e fichas técnicas de desenvolvimento
 ```
 
 ## Commits e qualidade
 
-Husky roda `pnpm exec lint-staged` antes de cada commit. Para arquivos JS/TS/TSX em `src`, lint-staged executa `pnpm lint` e `pnpm typecheck`.
+O Husky roda `pnpm exec lint-staged` antes de cada commit. Para arquivos JS/TS/TSX em `src`, lint-staged executa `pnpm lint` e `pnpm typecheck`.
 
 Antes de abrir PR, execute também `pnpm build`. Não contorne hooks nem edite `node_modules` manualmente.
 
 ## Regras de negócio
 
-As regras de negócio do ERP ainda não foram fornecidas. Não crie ou deduza regras a partir deste template. Quando a especificação estiver disponível, registre a fonte de verdade e o resumo aprovado nesta seção.
+Fonte de verdade esperada:
+
+`C:\Users\sanso\Downloads\Documento_de_Especificação_e_Regras_de_Negócio_-_Ateliê_de_Crochê.pdf`
+
+O PDF não estava disponível nesse caminho durante a reorganização. As regras de ficha técnica, precificação, estoque, produção, pedidos, pagamento, frete e cancelamento estão **pendentes de extração e validação**. Não as suponha a partir de protótipos, seeds ou documentos de design. Atualize esta seção assim que o PDF estiver disponível e mantenha esse caminho como referência original.
 
 ## Restrições importantes
 
 - Não implemente lógica de negócio em componentes de UI, layouts ou páginas.
-- Não acesse MySQL diretamente fora de services da feature responsável.
+- Não acesse PostgreSQL/Prisma diretamente fora de services da feature responsável.
+- Consultas a dados protegidos por Row Level Security devem executar em `withDatabaseRole`, dentro da transação, com o papel obtido da sessão validada.
 - Não use npm ou yarn.
 - Não crie dependências circulares entre features.
 - Não suba segredos, arquivos `.env` ou dados pessoais para o Git.
