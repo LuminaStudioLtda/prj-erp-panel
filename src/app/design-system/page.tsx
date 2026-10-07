@@ -8,8 +8,8 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Chip } from "@/components/ui/chip";
 import { Input } from "@/components/ui/input";
+import { ChipDemo } from "@/app/design-system/ChipDemo";
 import { StockLevelBar } from "@/components/ui/stock-level-bar";
 
 export const metadata = { title: "Design System · Lumina ERP" };
@@ -108,11 +108,7 @@ export default function DesignSystemPage() {
       </Section>
 
       <Section title="Chips">
-        <div className="flex flex-wrap gap-2">
-          <Chip selected>Todos</Chip>
-          <Chip>Em andamento</Chip>
-          <Chip>Concluídos</Chip>
-        </div>
+        <ChipDemo />
       </Section>
 
       <Section title="Badges de status">
