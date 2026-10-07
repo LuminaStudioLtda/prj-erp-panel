@@ -1,6 +1,6 @@
 # Lumina ERP
 
-Base Next.js para o painel ERP da Lumina. Stack: Next.js, TypeScript, Tailwind, shadcn/ui, Zustand, MySQL e Docker.
+Base Next.js para o painel ERP da Lumina. Stack: Next.js, TypeScript, Tailwind, shadcn/ui, Zustand, PostgreSQL e Prisma.
 
 Para iniciar: `pnpm install` e `pnpm dev`. Use exclusivamente pnpm.
 

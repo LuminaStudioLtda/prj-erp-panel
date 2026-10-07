@@ -43,3 +43,6 @@ next-env.d.ts
 
 # prisma
 /src/generated/
+
+# banco local de desenvolvimento
+/.postgres-data/
