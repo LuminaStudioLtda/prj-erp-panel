@@ -72,17 +72,41 @@ enum StockMovementReason {
 }
 
 model User {
-  id             String          @id @default(cuid())
-  name           String          @db.VarChar(160)
-  email          String          @unique @db.VarChar(320)
-  passwordHash   String?         @map("password_hash") @db.VarChar(255)
-  role           UserRole        @default(CLIENT)
-  orders         Order[]
-  stockMovements StockMovement[]
-  createdAt      DateTime        @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt      DateTime        @updatedAt @map("updated_at") @db.Timestamptz(3)
+  id                  String               @id @default(cuid())
+  name                String               @db.VarChar(160)
+  email               String               @unique @db.VarChar(320)
+  passwordHash        String?              @map("password_hash") @db.VarChar(255)
+  role                UserRole             @default(CLIENT)
+  orders              Order[]
+  stockMovements      StockMovement[]
+  passwordResetTokens PasswordResetToken[]
+  createdAt           DateTime             @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt           DateTime             @updatedAt @map("updated_at") @db.Timestamptz(3)
 
   @@map("users")
+  @@schema("public")
+}
+
+model PasswordResetToken {
+  id        String    @id @default(cuid())
+  userId    String    @map("user_id")
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String    @unique @map("token_hash") @db.VarChar(64)
+  expiresAt DateTime  @map("expires_at") @db.Timestamptz(3)
+  usedAt    DateTime? @map("used_at") @db.Timestamptz(3)
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@index([userId])
+  @@map("password_reset_tokens")
+  @@schema("public")
+}
+
+model AuthRateLimit {
+  key             String   @id @db.VarChar(200)
+  attempts        Int      @default(0)
+  windowStartedAt DateTime @map("window_started_at") @db.Timestamptz(3)
+
+  @@map("auth_rate_limits")
   @@schema("public")
 }
 
