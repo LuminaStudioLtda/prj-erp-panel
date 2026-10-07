@@ -1,0 +1,574 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  schemas  = ["public", "dw"]
+}
+
+enum UserRole {
+  CLIENT
+  ADMIN
+
+  @@map("user_role")
+  @@schema("public")
+}
+
+enum MaterialUnit {
+  UNIT
+  GRAM
+  KILOGRAM
+  MILLILITER
+  LITER
+  METER
+  CENTIMETER
+
+  @@map("material_unit")
+  @@schema("public")
+}
+
+enum ProductStatus {
+  DRAFT
+  ACTIVE
+  PAUSED
+  ARCHIVED
+
+  @@map("product_status")
+  @@schema("public")
+}
+
+enum SalesMode {
+  READY_TO_SHIP
+  MADE_TO_ORDER
+
+  @@map("sales_mode")
+  @@schema("public")
+}
+
+enum OrderStatus {
+  AWAITING_PAYMENT
+  IN_PRODUCTION
+  READY_TO_SHIP
+  SHIPPED
+  COMPLETED
+  CANCELLED
+
+  @@map("order_status")
+  @@schema("public")
+}
+
+enum StockMovementReason {
+  PURCHASE
+  ADJUSTMENT
+  PRODUCTION
+  ORDER
+  RETURN
+  LOSS
+
+  @@map("stock_movement_reason")
+  @@schema("public")
+}
+
+model User {
+  id             String          @id @default(cuid())
+  name           String          @db.VarChar(160)
+  email          String          @unique @db.VarChar(320)
+  passwordHash   String?         @map("password_hash") @db.VarChar(255)
+  role           UserRole        @default(CLIENT)
+  orders         Order[]
+  stockMovements StockMovement[]
+  createdAt      DateTime        @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt      DateTime        @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@map("users")
+  @@schema("public")
+}
+
+model Material {
+  id             String          @id @default(cuid())
+  name           String          @db.VarChar(160)
+  kind           String          @db.VarChar(80)
+  unit           MaterialUnit
+  reorderPoint   Decimal         @default(0) @map("reorder_point") @db.Decimal(12, 3)
+  lots           MaterialLot[]
+  recipeItems    RecipeItem[]
+  stockMovements StockMovement[]
+  createdAt      DateTime        @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt      DateTime        @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@index([name])
+  @@map("materials")
+  @@schema("public")
+}
+
+model MaterialLot {
+  id             String          @id @default(cuid())
+  materialId     String          @map("material_id")
+  material       Material        @relation(fields: [materialId], references: [id], onDelete: Restrict)
+  reference      String?         @db.VarChar(120)
+  unitCost       Decimal         @map("unit_cost") @db.Decimal(12, 4)
+  quantityOnHand Decimal         @default(0) @map("quantity_on_hand") @db.Decimal(12, 3)
+  receivedAt     DateTime        @default(now()) @map("received_at") @db.Timestamptz(3)
+  stockMovements StockMovement[]
+
+  @@index([materialId, receivedAt])
+  @@map("material_lots")
+  @@schema("public")
+}
+
+model Recipe {
+  id               String       @id @default(cuid())
+  productId        String       @unique @map("product_id")
+  product          Product      @relation(fields: [productId], references: [id], onDelete: Cascade)
+  estimatedMinutes Int          @map("estimated_minutes")
+  items            RecipeItem[]
+  createdAt        DateTime     @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt        DateTime     @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@map("recipes")
+  @@schema("public")
+}
+
+model RecipeItem {
+  id         String   @id @default(cuid())
+  recipeId   String   @map("recipe_id")
+  recipe     Recipe   @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+  materialId String   @map("material_id")
+  material   Material @relation(fields: [materialId], references: [id], onDelete: Restrict)
+  quantity   Decimal  @db.Decimal(12, 3)
+
+  @@unique([recipeId, materialId])
+  @@map("recipe_items")
+  @@schema("public")
+}
+
+model Product {
+  id              String          @id @default(cuid())
+  categoryId      String?         @map("category_id")
+  category        Category?       @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  name            String          @db.VarChar(180)
+  slug            String          @unique @db.VarChar(200)
+  description     String          @db.Text
+  status          ProductStatus   @default(DRAFT)
+  salesModes      SalesMode[]     @map("sales_modes")
+  price           Decimal         @db.Decimal(12, 2)
+  readyStock      Int             @default(0) @map("ready_stock")
+  madeToOrderDays Int?            @map("made_to_order_days")
+  recipe          Recipe?
+  orderItems      OrderItem[]
+  stockMovements  StockMovement[]
+  createdAt       DateTime        @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt       DateTime        @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@index([categoryId, status])
+  @@map("products")
+  @@schema("public")
+}
+
+model Category {
+  id        String    @id @default(cuid())
+  name      String    @unique @db.VarChar(120)
+  slug      String    @unique @db.VarChar(160)
+  products  Product[]
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@map("categories")
+  @@schema("public")
+}
+
+model Order {
+  id             String          @id @default(cuid())
+  userId         String?         @map("user_id")
+  user           User?           @relation(fields: [userId], references: [id], onDelete: SetNull)
+  customerName   String          @map("customer_name") @db.VarChar(160)
+  customerEmail  String          @map("customer_email") @db.VarChar(320)
+  status         OrderStatus     @default(AWAITING_PAYMENT)
+  total          Decimal         @db.Decimal(12, 2)
+  items          OrderItem[]
+  stockMovements StockMovement[]
+  createdAt      DateTime        @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt      DateTime        @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@index([userId, createdAt])
+  @@index([status, createdAt])
+  @@map("orders")
+  @@schema("public")
+}
+
+model OrderItem {
+  id          String   @id @default(cuid())
+  orderId     String   @map("order_id")
+  order       Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId   String?  @map("product_id")
+  product     Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+  productName String   @map("product_name") @db.VarChar(180)
+  quantity    Int
+  unitPrice   Decimal  @map("unit_price") @db.Decimal(12, 2)
+
+  @@map("order_items")
+  @@schema("public")
+}
+
+model StockMovement {
+  id             String              @id @default(cuid())
+  materialId     String?             @map("material_id")
+  material       Material?           @relation(fields: [materialId], references: [id], onDelete: Restrict)
+  materialLotId  String?             @map("material_lot_id")
+  materialLot    MaterialLot?        @relation(fields: [materialLotId], references: [id], onDelete: Restrict)
+  productId      String?             @map("product_id")
+  product        Product?            @relation(fields: [productId], references: [id], onDelete: Restrict)
+  orderId        String?             @map("order_id")
+  order          Order?              @relation(fields: [orderId], references: [id], onDelete: SetNull)
+  actorId        String?             @map("actor_id")
+  actor          User?               @relation(fields: [actorId], references: [id], onDelete: SetNull)
+  reason         StockMovementReason
+  origin         String              @db.VarChar(160)
+  quantityDelta  Decimal             @map("quantity_delta") @db.Decimal(12, 3)
+  resultingStock Decimal             @map("resulting_stock") @db.Decimal(12, 3)
+  createdAt      DateTime            @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@index([materialId, createdAt])
+  @@index([productId, createdAt])
+  @@map("stock_movements")
+  @@schema("public")
+}
+
+model PricingSettings {
+  id                   String   @id @default("default") @db.VarChar(32)
+  hourlyRate           Decimal  @map("hourly_rate") @db.Decimal(12, 2)
+  lossRate             Decimal  @map("loss_rate") @db.Decimal(7, 4)
+  desiredMarginPercent Decimal  @map("desired_margin_percent") @db.Decimal(7, 4)
+  updatedAt            DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@map("pricing_settings")
+  @@schema("public")
+}
+
+model DimDate {
+  dateKey   Int      @id @map("sk_tempo")
+  fullDate  DateTime @unique @map("data_completa") @db.Date
+  day       Int      @map("dia") @db.SmallInt
+  month     Int      @map("mes") @db.SmallInt
+  monthName String   @map("nome_mes") @db.VarChar(20)
+  quarter   Int      @map("trimestre") @db.SmallInt
+  year      Int      @map("ano") @db.SmallInt
+  weekday   String   @map("dia_semana") @db.VarChar(20)
+  isWeekend Boolean  @map("fim_de_semana")
+  isHoliday Boolean  @map("feriado")
+
+  salesByOrderDate            FactSales[]      @relation("SalesOrderDate")
+  paymentsByDate              FactPayment[]    @relation("PaymentDate")
+  reviewsByDate               FactReview[]     @relation("ReviewDate")
+  returnsByDate               FactReturn[]     @relation("ReturnDate")
+  inventoryByDate             FactInventory[]  @relation("InventoryDate")
+  shipmentsByPostDate         FactShipment[]   @relation("ShipmentPostDate")
+  shipmentsByDeliveryDate     FactShipment[]   @relation("ShipmentDeliveryDate")
+  productionsByStartDate      FactProduction[] @relation("ProductionStartDate")
+  productionsByCompletionDate FactProduction[] @relation("ProductionCompletionDate")
+
+  @@map("dim_tempo")
+  @@schema("dw")
+}
+
+model DimCustomer {
+  customerKey  BigInt    @id @default(autoincrement()) @map("sk_cliente")
+  sourceId     String    @map("id_cliente") @db.VarChar(30)
+  name         String    @map("nome") @db.VarChar(160)
+  email        String    @map("email") @db.VarChar(320)
+  city         String?   @map("cidade") @db.VarChar(120)
+  state        String?   @map("uf") @db.Char(2)
+  registeredAt DateTime  @map("data_cadastro") @db.Date
+  validFrom    DateTime  @map("vigencia_inicio") @db.Date
+  validTo      DateTime? @map("vigencia_fim") @db.Date
+  isCurrent    Boolean   @default(true) @map("registro_atual")
+
+  sales    FactSales[]
+  payments FactPayment[]
+  reviews  FactReview[]
+  returns  FactReturn[]
+
+  @@unique([sourceId, validFrom])
+  @@index([sourceId, isCurrent])
+  @@map("dim_cliente")
+  @@schema("dw")
+}
+
+model DimProduct {
+  productKey      BigInt   @id @default(autoincrement()) @map("sk_produto")
+  variationId     String   @unique @map("id_variacao") @db.VarChar(30)
+  sku             String   @map("sku") @db.VarChar(80)
+  name            String   @map("nome_produto") @db.VarChar(180)
+  category        String?  @map("categoria") @db.VarChar(120)
+  kind            String?  @map("tipo") @db.VarChar(80)
+  color           String?  @map("cor") @db.VarChar(80)
+  size            String?  @map("tamanho") @db.VarChar(40)
+  composition     String?  @map("composicao") @db.VarChar(160)
+  yardageMeters   Int?     @map("metragem_m")
+  weightGrams     Int?     @map("gramatura_g")
+  needleSizeMm    Decimal? @map("espessura_agulha_mm") @db.Decimal(4, 2)
+  acceptsExchange Boolean  @map("aceita_troca")
+
+  sales      FactSales[]
+  reviews    FactReview[]
+  returns    FactReturn[]
+  inventory  FactInventory[]
+  production FactProduction[]
+
+  @@index([sku])
+  @@map("dim_produto")
+  @@schema("dw")
+}
+
+model DimLot {
+  lotKey   BigInt  @id @default(autoincrement()) @map("sk_lote")
+  sourceId String  @unique @map("id_lote") @db.VarChar(30)
+  code     String? @map("codigo_lote") @db.VarChar(120)
+
+  sales     FactSales[]
+  inventory FactInventory[]
+
+  @@map("dim_lote")
+  @@schema("dw")
+}
+
+model DimGeography {
+  geographyKey Int    @id @default(autoincrement()) @map("sk_geografia")
+  postalCode   String @unique @map("cep") @db.VarChar(8)
+  city         String @map("cidade") @db.VarChar(120)
+  state        String @map("uf") @db.Char(2)
+  region       String @map("regiao") @db.VarChar(20)
+
+  salesByDelivery        FactSales[]    @relation("SalesDeliveryGeography")
+  shipmentsByDestination FactShipment[] @relation("ShipmentDestinationGeography")
+
+  @@map("dim_geografia")
+  @@schema("dw")
+}
+
+model DimCoupon {
+  couponKey    Int     @id @default(autoincrement()) @map("sk_cupom")
+  code         String  @unique @map("codigo") @db.VarChar(60)
+  discountType String  @map("tipo_desconto") @db.VarChar(40)
+  value        Decimal @map("valor") @db.Decimal(12, 2)
+
+  sales FactSales[]
+
+  @@map("dim_cupom")
+  @@schema("dw")
+}
+
+model DimPayment {
+  paymentKey Int    @id @default(autoincrement()) @map("sk_pagamento")
+  method     String @map("metodo") @db.VarChar(40)
+  status     String @map("status") @db.VarChar(40)
+
+  payments FactPayment[]
+
+  @@unique([method, status])
+  @@map("dim_pagamento")
+  @@schema("dw")
+}
+
+model DimMovementType {
+  movementTypeKey Int    @id @default(autoincrement()) @map("sk_tipo_movimentacao")
+  type            String @unique @map("tipo") @db.VarChar(40)
+  direction       Int    @map("sentido") @db.SmallInt
+
+  inventory FactInventory[]
+
+  @@map("dim_tipo_movimentacao")
+  @@schema("dw")
+}
+
+model DimReturnReason {
+  returnReasonKey Int    @id @default(autoincrement()) @map("sk_motivo_devolucao")
+  reason          String @unique @map("motivo") @db.VarChar(160)
+
+  returns FactReturn[]
+
+  @@map("dim_motivo_devolucao")
+  @@schema("dw")
+}
+
+model DimCarrier {
+  carrierKey Int    @id @default(autoincrement()) @map("sk_transportadora")
+  name       String @unique @map("nome") @db.VarChar(120)
+
+  shipments FactShipment[]
+
+  @@map("dim_transportadora")
+  @@schema("dw")
+}
+
+model DimArtisan {
+  artisanKey Int    @id @default(autoincrement()) @map("sk_artesa")
+  name       String @map("nome") @db.VarChar(160)
+
+  production FactProduction[]
+
+  @@map("dim_artesa")
+  @@schema("dw")
+}
+
+model FactSales {
+  orderItemId          String       @id @map("id_item_pedido") @db.VarChar(30)
+  orderId              String       @map("id_pedido") @db.VarChar(30)
+  orderStatus          String       @map("status_pedido") @db.VarChar(40)
+  orderDateKey         Int          @map("sk_data_pedido")
+  orderDate            DimDate      @relation("SalesOrderDate", fields: [orderDateKey], references: [dateKey], onDelete: Restrict)
+  customerKey          BigInt       @map("sk_cliente")
+  customer             DimCustomer  @relation(fields: [customerKey], references: [customerKey], onDelete: Restrict)
+  productKey           BigInt       @map("sk_produto")
+  product              DimProduct   @relation(fields: [productKey], references: [productKey], onDelete: Restrict)
+  deliveryGeographyKey Int          @map("sk_geografia_entrega")
+  deliveryGeography    DimGeography @relation("SalesDeliveryGeography", fields: [deliveryGeographyKey], references: [geographyKey], onDelete: Restrict)
+  couponKey            Int?         @map("sk_cupom")
+  coupon               DimCoupon?   @relation(fields: [couponKey], references: [couponKey], onDelete: Restrict)
+  lotKey               BigInt?      @map("sk_lote")
+  lot                  DimLot?      @relation(fields: [lotKey], references: [lotKey], onDelete: Restrict)
+  quantity             Int          @map("quantidade")
+  unitPrice            Decimal      @map("preco_unitario") @db.Decimal(12, 2)
+  grossValue           Decimal      @map("valor_bruto") @db.Decimal(12, 2)
+  allocatedDiscount    Decimal      @map("desconto_rateado") @db.Decimal(12, 2)
+  allocatedShipping    Decimal      @map("frete_rateado") @db.Decimal(12, 2)
+  netValue             Decimal      @map("valor_liquido") @db.Decimal(12, 2)
+
+  @@index([orderId])
+  @@index([orderDateKey])
+  @@index([customerKey])
+  @@index([productKey])
+  @@index([deliveryGeographyKey])
+  @@index([couponKey])
+  @@index([lotKey])
+  @@map("fato_vendas")
+  @@schema("dw")
+}
+
+model FactPayment {
+  paymentId      String      @id @map("id_pagamento") @db.VarChar(30)
+  orderId        String      @map("id_pedido") @db.VarChar(30)
+  paymentDateKey Int         @map("sk_data_pagamento")
+  paymentDate    DimDate     @relation("PaymentDate", fields: [paymentDateKey], references: [dateKey], onDelete: Restrict)
+  customerKey    BigInt      @map("sk_cliente")
+  customer       DimCustomer @relation(fields: [customerKey], references: [customerKey], onDelete: Restrict)
+  paymentTypeKey Int         @map("sk_pagamento")
+  paymentType    DimPayment  @relation(fields: [paymentTypeKey], references: [paymentKey], onDelete: Restrict)
+  amount         Decimal     @map("valor") @db.Decimal(12, 2)
+  installments   Int         @map("parcelas")
+
+  @@index([orderId])
+  @@index([paymentDateKey])
+  @@index([customerKey])
+  @@index([paymentTypeKey])
+  @@map("fato_pagamento")
+  @@schema("dw")
+}
+
+model FactReview {
+  reviewId    String      @id @map("id_avaliacao") @db.VarChar(30)
+  dateKey     Int         @map("sk_data")
+  date        DimDate     @relation("ReviewDate", fields: [dateKey], references: [dateKey], onDelete: Restrict)
+  customerKey BigInt      @map("sk_cliente")
+  customer    DimCustomer @relation(fields: [customerKey], references: [customerKey], onDelete: Restrict)
+  productKey  BigInt      @map("sk_produto")
+  product     DimProduct  @relation(fields: [productKey], references: [productKey], onDelete: Restrict)
+  rating      Int         @map("nota") @db.SmallInt
+
+  @@index([dateKey])
+  @@index([customerKey])
+  @@index([productKey])
+  @@map("fato_avaliacao")
+  @@schema("dw")
+}
+
+model FactReturn {
+  returnId        String          @id @map("id_devolucao") @db.VarChar(30)
+  orderItemId     String          @map("id_item_pedido") @db.VarChar(30)
+  dateKey         Int             @map("sk_data")
+  date            DimDate         @relation("ReturnDate", fields: [dateKey], references: [dateKey], onDelete: Restrict)
+  customerKey     BigInt          @map("sk_cliente")
+  customer        DimCustomer     @relation(fields: [customerKey], references: [customerKey], onDelete: Restrict)
+  productKey      BigInt          @map("sk_produto")
+  product         DimProduct      @relation(fields: [productKey], references: [productKey], onDelete: Restrict)
+  returnReasonKey Int             @map("sk_motivo_devolucao")
+  returnReason    DimReturnReason @relation(fields: [returnReasonKey], references: [returnReasonKey], onDelete: Restrict)
+  quantity        Int             @map("quantidade")
+  refundedValue   Decimal         @map("valor_devolvido") @db.Decimal(12, 2)
+
+  @@index([orderItemId])
+  @@index([dateKey])
+  @@index([customerKey])
+  @@index([productKey])
+  @@index([returnReasonKey])
+  @@map("fato_devolucao")
+  @@schema("dw")
+}
+
+model FactInventory {
+  movementId      String          @id @map("id_movimentacao") @db.VarChar(30)
+  reason          String          @map("motivo") @db.VarChar(160)
+  dateKey         Int             @map("sk_data")
+  date            DimDate         @relation("InventoryDate", fields: [dateKey], references: [dateKey], onDelete: Restrict)
+  productKey      BigInt?         @map("sk_produto")
+  product         DimProduct?     @relation(fields: [productKey], references: [productKey], onDelete: Restrict)
+  lotKey          BigInt?         @map("sk_lote")
+  lot             DimLot?         @relation(fields: [lotKey], references: [lotKey], onDelete: Restrict)
+  movementTypeKey Int             @map("sk_tipo_movimentacao")
+  movementType    DimMovementType @relation(fields: [movementTypeKey], references: [movementTypeKey], onDelete: Restrict)
+  quantity        Int             @map("quantidade")
+
+  @@index([dateKey])
+  @@index([productKey])
+  @@index([lotKey])
+  @@index([movementTypeKey])
+  @@map("fato_estoque")
+  @@schema("dw")
+}
+
+model FactShipment {
+  shipmentId              String       @id @map("id_envio") @db.VarChar(30)
+  orderId                 String       @map("id_pedido") @db.VarChar(30)
+  postDateKey             Int          @map("sk_data_postagem")
+  postDate                DimDate      @relation("ShipmentPostDate", fields: [postDateKey], references: [dateKey], onDelete: Restrict)
+  deliveryDateKey         Int?         @map("sk_data_entrega")
+  deliveryDate            DimDate?     @relation("ShipmentDeliveryDate", fields: [deliveryDateKey], references: [dateKey], onDelete: Restrict)
+  carrierKey              Int          @map("sk_transportadora")
+  carrier                 DimCarrier   @relation(fields: [carrierKey], references: [carrierKey], onDelete: Restrict)
+  destinationGeographyKey Int          @map("sk_geografia_destino")
+  destinationGeography    DimGeography @relation("ShipmentDestinationGeography", fields: [destinationGeographyKey], references: [geographyKey], onDelete: Restrict)
+  promisedDays            Int          @map("prazo_prometido_dias")
+  actualDays              Int?         @map("prazo_real_dias")
+  deliveredOnTime         Int?         @map("entregue_no_prazo") @db.SmallInt
+
+  @@index([orderId])
+  @@index([postDateKey])
+  @@index([deliveryDateKey])
+  @@index([carrierKey])
+  @@index([destinationGeographyKey])
+  @@map("fato_envio")
+  @@schema("dw")
+}
+
+model FactProduction {
+  orderItemId       String     @id @map("id_item_pedido") @db.VarChar(30)
+  startDateKey      Int        @map("sk_data_inicio")
+  startDate         DimDate    @relation("ProductionStartDate", fields: [startDateKey], references: [dateKey], onDelete: Restrict)
+  completionDateKey Int?       @map("sk_data_conclusao")
+  completionDate    DimDate?   @relation("ProductionCompletionDate", fields: [completionDateKey], references: [dateKey], onDelete: Restrict)
+  productKey        BigInt     @map("sk_produto")
+  product           DimProduct @relation(fields: [productKey], references: [productKey], onDelete: Restrict)
+  artisanKey        Int        @map("sk_artesa")
+  artisan           DimArtisan @relation(fields: [artisanKey], references: [artisanKey], onDelete: Restrict)
+  deadlineDays      Int        @map("dias_prazo")
+  productionDays    Int?       @map("dias_producao")
+  delayDays         Int?       @map("dias_atraso")
+
+  @@index([startDateKey])
+  @@index([completionDateKey])
+  @@index([productKey])
+  @@index([artisanKey])
+  @@map("fato_producao")
+  @@schema("dw")
+}

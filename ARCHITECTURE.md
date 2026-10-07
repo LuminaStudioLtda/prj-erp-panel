@@ -14,7 +14,7 @@ src/
   features/     # Domínios de negócio e seus casos de uso.
   components/   # UI reutilizada por duas ou mais features; shadcn em components/ui.
   hooks/        # Hooks reutilizados por duas ou mais features.
-  lib/          # Clientes de API/MySQL e helpers gerais sem domínio específico.
+  lib/          # Clientes de API/PostgreSQL e helpers gerais sem domínio específico.
   store/        # Stores Zustand compartilhadas, uma por domínio.
 ```
 
@@ -23,7 +23,7 @@ src/
 - Uma feature fica em `src/features/<nome-em-kebab-case>/` e pode ter `components/`, `hooks/`, `services/` e `types.ts` próprios.
 - Código usado apenas por uma feature permanece nela. Código usado por duas ou mais sobe para `components/`, `hooks/`, `lib/` ou `store/`.
 - `components/` contém UI sem regra de domínio. Primitives do shadcn/ui ficam em `components/ui/`.
-- `lib/` concentra clientes de infraestrutura e helpers gerais. Acesso ao MySQL ocorre somente em `services/` da feature responsável, usando o cliente definido em `lib/`.
+- `lib/` concentra clientes de infraestrutura e helpers gerais. Acesso ao PostgreSQL (via Prisma) ocorre somente em `services/` da feature responsável, usando o cliente definido em `lib/`.
 - `store/` contém estado global ou compartilhado entre features. Nomeie cada arquivo como `use-<dominio>-store.ts`. Estado local de uma feature permanece nela.
 - Não crie `shared/`, `entities/`, `widgets/` ou uma pasta genérica de tipos.
 
@@ -50,7 +50,7 @@ Para UI, siga [docs/DESIGN.md](docs/DESIGN.md). Cores são consumidas pelos toke
 - TypeScript estrito
 - Tailwind CSS e shadcn/ui
 - Zustand
-- MySQL e Docker para persistência e ambiente local quando o backend for introduzido
+- PostgreSQL com Prisma para persistência; autenticação própria (senha com scrypt e sessão JWT em cookie httpOnly)
 
 Use exclusivamente pnpm:
 
@@ -75,7 +75,7 @@ As regras de negócio do ERP ainda não foram fornecidas. Não crie ou deduza re
 ## Restrições importantes
 
 - Não implemente lógica de negócio em componentes de UI, layouts ou páginas.
-- Não acesse MySQL diretamente fora de services da feature responsável.
+- Não acesse o banco diretamente fora de services da feature responsável.
 - Não use npm ou yarn.
 - Não crie dependências circulares entre features.
 - Não suba segredos, arquivos `.env` ou dados pessoais para o Git.

@@ -4,7 +4,7 @@ A Next.js foundation for Lumina's operational management platform. Business modu
 
 ## Technology
 
-Next.js App Router, React, TypeScript, Tailwind CSS, shadcn/ui, Zustand, MySQL, and Docker. Use **pnpm only**; npm and Yarn are not supported.
+Next.js App Router, React, TypeScript, Tailwind CSS, shadcn/ui, Zustand, PostgreSQL with Prisma. Use **pnpm only**; npm and Yarn are not supported.
 
 ## Getting started
 
