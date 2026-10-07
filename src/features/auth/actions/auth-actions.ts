@@ -4,6 +4,14 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 
 import { verifyPassword } from "@/features/auth/services/password";
+import {
+  clearAttempts,
+  getClientIp,
+  getRetryAfterForRules,
+  LOGIN_WINDOW_MS,
+  rateLimitMessage,
+  recordAttempts,
+} from "@/features/auth/services/rate-limit";
 import { safeRedirectPath } from "@/features/auth/services/safe-redirect";
 import {
   clearSessionCookie,
@@ -18,6 +26,9 @@ const loginSchema = z.object({
   password: z.string().min(1, "Informe a senha."),
 });
 
+const MAX_ATTEMPTS_PER_EMAIL = 5;
+const MAX_ATTEMPTS_PER_IP = 20;
+
 export async function loginAction(
   _previous: ActionResult<null> | null,
   formData: FormData,
@@ -29,9 +40,23 @@ export async function loginAction(
   if (!parsed.success) return toActionError(parsed.error);
 
   const email = parsed.data.email.toLowerCase();
+  const ip = await getClientIp();
+  const emailKey = `login:email:${email}`;
+  const ipKey = `login:ip:${ip}`;
 
   let user;
   try {
+    const retryAfter = await getRetryAfterForRules([
+      { key: emailKey, max: MAX_ATTEMPTS_PER_EMAIL, windowMs: LOGIN_WINDOW_MS },
+      { key: ipKey, max: MAX_ATTEMPTS_PER_IP, windowMs: LOGIN_WINDOW_MS },
+    ]);
+    if (retryAfter > 0) {
+      return failure({
+        code: "RATE_LIMITED",
+        message: rateLimitMessage(retryAfter),
+      });
+    }
+
     user = await prisma.user.findUnique({
       where: { email },
       select: { id: true, role: true, passwordHash: true },
@@ -45,11 +70,21 @@ export async function loginAction(
     user?.passwordHash ?? null,
   );
   if (!user || !valid) {
+    try {
+      await recordAttempts([
+        { key: emailKey, windowMs: LOGIN_WINDOW_MS },
+        { key: ipKey, windowMs: LOGIN_WINDOW_MS },
+      ]);
+    } catch (cause) {
+      return toActionError(cause);
+    }
     return failure({
       code: "UNAUTHENTICATED",
       message: "E-mail ou senha inválidos.",
     });
   }
+
+  await clearAttempts(emailKey);
 
   if (!(await setSessionCookie(user.id))) {
     return failure({
