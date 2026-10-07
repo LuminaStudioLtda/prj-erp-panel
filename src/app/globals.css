@@ -37,15 +37,15 @@
 }
 
 :root {
-  --canvas: #F9F7F2;
-  --surface: #FFFFFF;
-  --ink: #30312E;
+  --canvas: #f9f7f2;
+  --surface: #ffffff;
+  --ink: #30312e;
   --muted: #777773;
-  --border: #E4E2DD;
-  --terracotta: #8C6A5D;
-  --sage: #A3B18A;
-  --ochre: #D4A373;
-  --critical: #9B3A32;
+  --border: #e4e2dd;
+  --terracotta: #8c6a5d;
+  --sage: #a3b18a;
+  --ochre: #d4a373;
+  --critical: #9b3a32;
   --background: var(--canvas);
   --foreground: var(--ink);
   --card: var(--surface);
